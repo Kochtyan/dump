@@ -1,0 +1,14 @@
+﻿  Скопировано файлов:         1.
+  Скопировано файлов:         1.
+  Скопировано файлов:         1.
+  Скопировано файлов:         1.
+  Скопировано файлов:         1.
+  Скопировано файлов:         1.
+  Подпапка или файл D:\projects\PetroGM\x64\Debug Dynamic\resources уже существует.
+  D:\projects\PetroGM\resources\ball.wav
+  D:\projects\PetroGM\resources\sansation.ttf
+  Скопировано файлов:         2.
+  main.cpp
+d:\projects\petrogm\main.cpp(28): warning C4244: аргумент: преобразование "float" в "unsigned int", возможна потеря данных
+d:\projects\petrogm\main.cpp(31): warning C4244: аргумент: преобразование "float" в "unsigned int", возможна потеря данных
+  PetroGM.vcxproj -> D:\projects\PetroGM\x64\Debug Dynamic\PetroGM.exe
