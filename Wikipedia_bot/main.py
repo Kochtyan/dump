@@ -301,20 +301,55 @@ def query(message):
             if lang == 'rus':
                 wikipedia.set_lang("ru")
                 btn_text = 'Перейти на страницу Википедия'
+                btn_text2 = 'Сохранить статью'
+                btn_text3 = 'Удалить статью'
             else:
                 wikipedia.set_lang("en")
                 btn_text = 'Go to Wikipedia page'
+                btn_text2 = 'Save article'
+                btn_text3 = 'Delete article'
 
             message_upper = message.text.title()
+            wiki = wikipedia.WikipediaPage(title=wikipedia.page(message_upper, auto_suggest=False).title)
+            title_db = wikipedia.page(message_upper, auto_suggest=False).title
+            url_db = wikipedia.page(message_upper, auto_suggest=False).url
+            sentences = 3
+            img_url = None
+
+            for img in wiki.images:
+                if Path(img).suffix != '.svg':
+                    img_url = img
+                    break
+            if img_url is None:
+                img_url = ''
+
             mess = f'<b>{wikipedia.page(message_upper, auto_suggest=False).title}</b> \n\n ' \
-                   f'{wikipedia.summary(message_upper, auto_suggest=False, sentences=3)}'
-            markup = types.InlineKeyboardMarkup(row_width=1)
-            markup.add(types.InlineKeyboardButton(btn_text, url=wikipedia.page(message_upper, auto_suggest=False).url))
+                   f'{wikipedia.summary(message_upper, auto_suggest=False, sentences=sentences)} {img_url}'
+            uid = uuid.uuid4().hex
+            message_data = {"title": title_db, "link": url_db, "message": mess, "image": img_url}
+
+            btn = types.InlineKeyboardButton(btn_text, url=wikipedia.page(message_upper, auto_suggest=False).url)
+            message_data_dict[uid] = message_data
+            markup = types.InlineKeyboardMarkup().row(btn)
+
+            if db_check(userId, title_db, url_db):
+                del_btn = types.InlineKeyboardButton(btn_text3, callback_data=uid)
+                markup.row(del_btn)
+
+                info = cursor.execute('SELECT * FROM favorites WHERE user_id=? AND title=? AND url=?',
+                                      (userId, title_db, url_db)).fetchone()
+                _id = info[0]
+                message_id = {"id": _id}
+                message_id_dict[uid] = message_id
+            else:
+                save_btn = types.InlineKeyboardButton(btn_text2, callback_data=uid)
+                markup.row(save_btn)
 
             bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
 
         except wikipedia.exceptions.PageError:
             suggest = wikipedia.suggest(message.text)
+
             if lang == 'rus':
                 wikipedia.set_lang("ru")
                 if suggest is not None:
@@ -327,17 +362,61 @@ def query(message):
                     mess = f'Perhaps, you meant this: <code>{suggest}</code>'
                 else:
                     mess = "I can't find anything <b>PoroSad</b>."
+
             bot.send_message(message.chat.id, mess, parse_mode='html')
+
+        except telebot.apihelper.ApiTelegramException:
+            sentences = 2
+
+            mess = f'<b>{wikipedia.page(message_upper, auto_suggest=False).title}</b> \n\n ' \
+                   f'{wikipedia.summary(message_upper, auto_suggest=False, sentences=sentences)} {img_url}'
+            uid = uuid.uuid4().hex
+            message_data = {"title": title_db, "link": url_db, "message": mess, "image": img_url}
+
+            btn = types.InlineKeyboardButton(btn_text, url=wikipedia.page(message_upper, auto_suggest=False).url)
+            message_data_dict[uid] = message_data
+            markup = types.InlineKeyboardMarkup().row(btn)
+
+            if db_check(userId, title_db, url_db):
+                del_btn = types.InlineKeyboardButton(btn_text3, callback_data=uid)
+                markup.row(del_btn)
+
+                info = cursor.execute('SELECT * FROM favorites WHERE user_id=? AND title=? AND url=?',
+                                      (userId, title_db, url_db)).fetchone()
+                _id = info[0]
+                message_id = {"id": _id}
+                message_id_dict[uid] = message_id
+            else:
+                save_btn = types.InlineKeyboardButton(btn_text2, callback_data=uid)
+                markup.row(save_btn)
+
+            bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
 
     except telebot.apihelper.ApiTelegramException:
         sentences = 2
 
         mess = f'<b>{wikipedia.page(message.text, auto_suggest=False).title}</b> \n\n ' \
                f'{wikipedia.summary(message.text, auto_suggest=False, sentences=sentences)} {img_url}'
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        markup.add(types.InlineKeyboardButton(btn_text, url=wikipedia.page(message.text, auto_suggest=False).url))
 
-        bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
+        uid = uuid.uuid4().hex
+        message_data = {"title": title_db, "link": url_db, "message": mess, "image": img_url}
+
+        btn = types.InlineKeyboardButton(btn_text, url=url_db)
+        message_data_dict[uid] = message_data
+        markup = types.InlineKeyboardMarkup().row(btn)
+
+        if db_check(userId, title_db, url_db):
+            del_btn = types.InlineKeyboardButton(btn_text3, callback_data=uid)
+            markup.row(del_btn)
+
+            info = cursor.execute('SELECT * FROM favorites WHERE user_id=? AND title=? AND url=?',
+                                  (userId, title_db, url_db)).fetchone()
+            _id = info[0]
+            message_id = {"id": _id}
+            message_id_dict[uid] = message_id
+        else:
+            save_btn = types.InlineKeyboardButton(btn_text2, callback_data=uid)
+            markup.row(save_btn)
 
     except Exception as e:
         print(repr(e))
